@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "53l8a1_ranging_sensor.h": "c",
+        "tofis_uart.h": "c"
+    }
+}
