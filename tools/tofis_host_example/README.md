@@ -7,11 +7,11 @@
 ## Compile
 ```bash
 ## Linux
-gcc -o host_program tofis_main.c tofis_host_api.c tofis_host_serial.c -lpthread
+gcc -o host_program tofis_main.c tofis_host_api.c tofis_host_serial.c tofis_input_parser.c -lpthread
 
 
 ## Windows
-gcc -o host_program.exe tofis_main.c tofis_host_api.c tofis_host_serial.c
+gcc -o host_program.exe tofis_main.c tofis_host_api.c tofis_host_serial.c tofis_input_parser.c
 ```
 
 ## Usage

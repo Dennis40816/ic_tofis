@@ -2,6 +2,7 @@
 #include "tofis_host_api.h"
 #include "checksum.h"
 #include "tofis_host_serial.h"
+#include "tofis_input_parser.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -123,11 +124,56 @@ static void *receive_thread_func(void *arg) {
 #endif
 }
 
-static
 #ifdef _WIN32
-    HANDLE receive_thread;
+static HANDLE receive_thread;
+static HANDLE input_thread;
 #else
-    pthread_t receive_thread_p;
+static pthread_t receive_thread_p;
+static pthread_t input_thread_p;
+#endif
+
+#ifdef _WIN32
+DWORD WINAPI user_input_thread_func(LPVOID lpParam) {
+#else
+static void *user_input_thread_func(void *arg) {
+#endif
+
+#ifdef _WIN32
+  SerialPort *port = (SerialPort *)lpParam; // 傳入的串列埠結構
+#else
+  SerialPort *port = (SerialPort *)arg; // 傳入的串列埠結構
+#endif
+  char user_input_section[TOFIS_USER_INPUT_BUF_SIZE];
+  uint8_t to_tofis_buf[TOFIS_USER_INPUT_BUF_SIZE];
+
+  while (1) {
+    printf("Enter command: ");
+    if (fgets(user_input_section, sizeof(user_input_section), stdin) == NULL) {
+      printf("Error: Failed to read user input.\n");
+      continue;
+    }
+
+    // 移除換行符
+    user_input_section[strcspn(user_input_section, "\n")] = 0;
+
+    // 解析輸入並寫入 cmd_buf
+    size_t buf_len = 0;
+    parse_to_cmd_buf(user_input_section, to_tofis_buf, &buf_len);
+
+    // 寫入串列埠
+    if (write_serial(port, to_tofis_buf, strlen((char *)to_tofis_buf)) < 0) {
+      printf("Error: Failed to write to serial port.\n");
+    } else {
+      printf("Command sent: %s\n", to_tofis_buf);
+    }
+  }
+
+#ifdef _WIN32
+  return 0;
+}
+#else
+  return NULL;
+}
 #endif
 
 int tofis_host_api_init(const char *port_name, int baud_rate) {
@@ -162,11 +208,33 @@ int tofis_host_api_init(const char *port_name, int baud_rate) {
     close_serial(&serial_port);
     return -1;
   }
+
+  // 創建用戶輸入線程
+  input_thread = CreateThread(NULL, 0, user_input_thread_func,
+                              (LPVOID)&serial_port, 0, NULL);
+  if (input_thread == NULL) {
+    printf("Error: Unable to create input thread.\n");
+    TerminateThread(receive_thread, 0);
+    CloseHandle(receive_thread);
+    CloseHandle(data_cond);
+    CloseHandle(data_mutex);
+    close_serial(&serial_port);
+    return -1;
+  }
 #else
-  // 初始化 mutex 和 condition variable 已經在全局初始化
   // 創建接收線程
   if (pthread_create(&receive_thread_p, NULL, receive_thread_func, NULL) != 0) {
     printf("Error: Unable to create receive thread.\n");
+    close_serial(&serial_port);
+    return -1;
+  }
+
+  // 創建用戶輸入線程
+  if (pthread_create(&input_thread_p, NULL, user_input_thread_func,
+                     (void *)&serial_port) != 0) {
+    printf("Error: Unable to create input thread.\n");
+    pthread_cancel(receive_thread_p);
+    pthread_join(receive_thread_p, NULL);
     close_serial(&serial_port);
     return -1;
   }
@@ -209,15 +277,23 @@ void tofis_host_api_cleanup() {
 
   // 關閉 mutex 和 condition variable
 #ifdef _WIN32
-  CloseHandle(data_cond);
-  CloseHandle(data_mutex);
-  // 終止接收線程（可選，需更完善的終止機制）
+  // 終止接收線程和輸入線程（可選，需更完善的終止機制）
   TerminateThread(receive_thread, 0);
   CloseHandle(receive_thread);
+  TerminateThread(input_thread, 0);
+  CloseHandle(input_thread);
+
+  CloseHandle(data_cond);
+  CloseHandle(data_mutex);
 #else
-  // 停止接收線程（需要更完善的終止機制，例如使用全局變量來通知線程退出）
+  // 停止接收線程和輸入線程（需要更完善的終止機制，例如使用全局變量來通知線程退出）
   // 目前無法直接停止 pthread，僅示範
   pthread_cancel(receive_thread_p);
   pthread_join(receive_thread_p, NULL);
+  pthread_cancel(input_thread_p);
+  pthread_join(input_thread_p, NULL);
+
+  pthread_cond_destroy(&data_cond_p);
+  pthread_mutex_destroy(&data_mutex_p);
 #endif
 }

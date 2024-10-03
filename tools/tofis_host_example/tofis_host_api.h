@@ -5,6 +5,8 @@
 
 #include "tofis_data.h"
 
+#define TOFIS_USER_INPUT_BUF_SIZE (256)
+
 // 初始化 Host API
 int tofis_host_api_init(const char *port_name, int baud_rate);
 

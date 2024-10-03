@@ -183,8 +183,7 @@ static void MX_53L8A1_SimpleRanging_Process(void) {
     printf("VL53L8A1_RANGING_SENSOR_Set to target order: closest failed!\n");
     while (1)
       ;
-  }else
-  {
+  } else {
     printf("VL53L8A1_RANGING_SENSOR_Set to target order: CLOEST!\n");
   }
 
@@ -343,7 +342,10 @@ static void toggle_signal_and_ambient(void) {
   VL53L8A1_RANGING_SENSOR_Start(VL53L8A1_DEV_CENTER, RS_MODE_ASYNC_CONTINUOUS);
 }
 
-static void clear_screen(void) { printf("%c[2J", 27); /* 27 is ESC command */ }
+static void clear_screen(void) {
+  // printf("%c[2J", 27); /* 27 is ESC command */
+  printf("\033[2J\033[H");
+}
 
 static void display_commands_banner(void) {
   // move to second row

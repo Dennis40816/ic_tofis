@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 // Timer related
 #include <time.h>
 
@@ -74,10 +73,7 @@ void calculate_time_diff() {
 #endif
 }
 
-static void clear_rest()
-{
-  printf("\033[J");
-}
+static void clear_rest() { printf("\033[J"); }
 
 // 打印結果函數
 static void print_result(RANGING_SENSOR_Result_t *Result) {
@@ -91,9 +87,11 @@ static void print_result(RANGING_SENSOR_Result_t *Result) {
 
   printf("Cell Format :\033[K\n\033[K\n");
   for (l = 0; l < RANGING_SENSOR_NB_TARGET_PER_ZONE; l++) {
-    printf(" \033[38;5;10m%20s\033[0m : %20s\033[K\n", "Distance [mm]", "Status");
+    printf(" \033[38;5;10m%20s\033[0m : %20s\033[K\n", "Distance [mm]",
+           "Status");
     if ((Profile.EnableAmbient != 0) || (Profile.EnableSignal != 0)) {
-      printf(" %20s : %20s\033[K\n", "Signal [kcps/spad]", "Ambient [kcps/spad]\033[K");
+      printf(" %20s : %20s\033[K\n", "Signal [kcps/spad]",
+             "Ambient [kcps/spad]\033[K");
     }
   }
 
