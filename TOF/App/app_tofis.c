@@ -102,6 +102,23 @@ void MX_TOFIS_Process(void) {
   /* USER CODE END TOF_Process_PostTreatment */
 }
 
+/* Call only when device stops */
+// VL53L8CX_TARGET_ORDER_CLOSEST or VL53L8CX_TARGET_ORDER_STRONGEST
+
+static uint8_t Tofis_Set_Target_Order(uint8_t target_order) {
+  VL53L8CX_Object_t *vl53l8cx_obj_p =
+      (VL53L8CX_Object_t *)VL53L8A1_RANGING_SENSOR_CompObj[VL53L8A1_DEV_CENTER];
+  return vl53l8cx_set_target_order(&(vl53l8cx_obj_p->Dev), target_order);
+}
+
+static uint8_t Tofis_Get_Target_Order(uint8_t target_order) {
+  VL53L8CX_Object_t *vl53l8cx_obj_p =
+      (VL53L8CX_Object_t *)VL53L8A1_RANGING_SENSOR_CompObj[VL53L8A1_DEV_CENTER];
+  vl53l8cx_get_target_order(&(vl53l8cx_obj_p->Dev), &target_order);
+
+  return target_order;
+}
+
 static void MX_53L8A1_SimpleRanging_Init(void) {
   /* Initialize Virtual COM Port */
   BSP_COM_DeInit(COM1);
@@ -124,12 +141,12 @@ static void MX_53L8A1_SimpleRanging_Init(void) {
   HAL_Delay(2);
 
   clear_screen();
-  
-  #ifndef TOFIS_TRANSMIT_RAW_DATA
+
+#ifndef TOFIS_TRANSMIT_RAW_DATA
   printf("\033[2H\033[2J");
   printf("TOFIS Simple Ranging demo application\n");
   printf("Sensor initialization...\n");
-  #endif
+#endif
 
   VL53L8A1_RANGING_SENSOR_DeInit(VL53L8A1_DEV_CENTER);
   status = VL53L8A1_RANGING_SENSOR_Init(VL53L8A1_DEV_CENTER);
@@ -160,6 +177,17 @@ static void MX_53L8A1_SimpleRanging_Process(void) {
   /* set the profile if different from default one */
   VL53L8A1_RANGING_SENSOR_ConfigProfile(VL53L8A1_DEV_CENTER, &Profile);
 
+  status = Tofis_Set_Target_Order(VL53L8CX_TARGET_ORDER_CLOSEST);
+
+  if (status != BSP_ERROR_NONE) {
+    printf("VL53L8A1_RANGING_SENSOR_Set to target order: closest failed!\n");
+    while (1)
+      ;
+  }else
+  {
+    printf("VL53L8A1_RANGING_SENSOR_Set to target order: CLOEST!\n");
+  }
+
   status = VL53L8A1_RANGING_SENSOR_Start(VL53L8A1_DEV_CENTER,
                                          RS_MODE_ASYNC_CONTINUOUS);
 
@@ -187,7 +215,8 @@ static void MX_53L8A1_SimpleRanging_Process(void) {
                 ? 8
                 : 4;
 
-        Tofis_Slave_USART_SendData_Le(&_tofis_slave_device, zones_per_line, &Result);
+        Tofis_Slave_USART_SendData_Le(&_tofis_slave_device, zones_per_line,
+                                      &Result);
 #else
         print_result(&Result);
 #endif
