@@ -36,6 +36,7 @@ extern "C" {
 #endif
 
 /* Private typedef -----------------------------------------------------------*/
+typedef uint8_t RANGING_SENSOR_Target_Order_t;
 
 /* Private define ------------------------------------------------------------*/
 #define TIMING_BUDGET (30U) /* 5 ms < TimingBudget < 100 ms */
@@ -47,6 +48,8 @@ extern "C" {
 static RANGING_SENSOR_Capabilities_t Cap;
 static RANGING_SENSOR_ProfileConfig_t Profile;
 static RANGING_SENSOR_Result_t Result;
+static RANGING_SENSOR_Target_Order_t TargetOrder =
+    VL53L8CX_TARGET_ORDER_CLOSEST;
 static int32_t status = 0;
 static volatile uint8_t PushButtonDetected = 0;
 
@@ -117,6 +120,18 @@ static uint8_t Tofis_Get_Target_Order(uint8_t target_order) {
   vl53l8cx_get_target_order(&(vl53l8cx_obj_p->Dev), &target_order);
 
   return target_order;
+}
+
+static uint8_t toggle_target_order() {
+  VL53L8A1_RANGING_SENSOR_Stop(VL53L8A1_DEV_CENTER);
+
+  TargetOrder = (TargetOrder == VL53L8CX_TARGET_ORDER_CLOSEST)
+                    ? VL53L8CX_TARGET_ORDER_STRONGEST
+                    : VL53L8CX_TARGET_ORDER_CLOSEST;
+  
+  Tofis_Set_Target_Order(TargetOrder);
+
+  VL53L8A1_RANGING_SENSOR_Start(VL53L8A1_DEV_CENTER, RS_MODE_ASYNC_CONTINUOUS);
 }
 
 static void MX_53L8A1_SimpleRanging_Init(void) {
@@ -358,6 +373,7 @@ static void display_commands_banner(void) {
   printf(" 'r' : change resolution\n");
   printf(" 's' : enable signal and ambient\n");
   printf(" 'c' : clear screen\n");
+  printf(" 't' : toggle target order\n");
   printf("\n");
 }
 
@@ -375,6 +391,10 @@ static void handle_cmd(uint8_t cmd) {
 
   case 'c':
     clear_screen();
+    break;
+
+  case 't':
+    toggle_target_order();
     break;
 
   default:

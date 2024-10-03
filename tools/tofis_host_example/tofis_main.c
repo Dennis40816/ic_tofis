@@ -35,6 +35,8 @@ Profile_t Profile = {0};
 
 // 顯示命令橫幅
 static void display_commands_banner(void) {
+  static const int col_len = 40;
+
   // move to second row
   printf("%c[H", 27);
 
@@ -42,9 +44,10 @@ static void display_commands_banner(void) {
   printf("--------------------------------------\033[K\n\033[K\n");
 
   printf("Use the following keys to control application\033[K\n");
-  printf(" 'r' : change resolution\033[K\n");
-  printf(" 's' : enable signal and ambient\033[K\n");
-  printf(" 'c' : clear screen\033[K\n");
+  printf(" %-*s %-*s\033[K\n", col_len, " 'r' : change resolution", col_len,
+         " 's' : enable signal and ambient");
+  printf(" %-*s %-*s\033[K\n", col_len, " 'c' : clear screen", col_len,
+         " 't' : toggle target order");
   printf("\033[K\n");
 }
 
