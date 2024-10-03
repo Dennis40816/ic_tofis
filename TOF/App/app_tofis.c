@@ -166,7 +166,7 @@ static void MX_53L8A1_SimpleRanging_Process(void) {
   VL53L8A1_RANGING_SENSOR_ReadID(VL53L8A1_DEV_CENTER, &Id);
   VL53L8A1_RANGING_SENSOR_GetCapabilities(VL53L8A1_DEV_CENTER, &Cap);
 
-  Profile.RangingProfile = RS_PROFILE_4x4_CONTINUOUS;
+  Profile.RangingProfile = RS_PROFILE_8x8_CONTINUOUS;
   Profile.TimingBudget = TIMING_BUDGET;
   Profile.Frequency =
       RANGING_FREQUENCY;     /* Ranging frequency Hz (shall be consistent with

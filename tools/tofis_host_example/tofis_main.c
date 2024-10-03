@@ -37,16 +37,16 @@ Profile_t Profile = {0};
 // 顯示命令橫幅
 static void display_commands_banner(void) {
   // move to second row
-  printf("%c[2H", 27);
+  printf("%c[H", 27);
 
-  printf("TOFIS Simple Ranging demo application\n");
-  printf("--------------------------------------\n\n");
+  printf("TOFIS Simple Ranging demo application\033[K\n");
+  printf("--------------------------------------\033[K\n\033[K\n");
 
-  printf("Use the following keys to control application\n");
-  printf(" 'r' : change resolution\n");
-  printf(" 's' : enable signal and ambient\n");
-  printf(" 'c' : clear screen\n");
-  printf("\n");
+  printf("Use the following keys to control application\033[K\n");
+  printf(" 'r' : change resolution\033[K\n");
+  printf(" 's' : enable signal and ambient\033[K\n");
+  printf(" 'c' : clear screen\033[K\n");
+  printf("\033[K\n");
 }
 
 // 初始化計時器
@@ -74,6 +74,11 @@ void calculate_time_diff() {
 #endif
 }
 
+static void clear_rest()
+{
+  printf("\033[J");
+}
+
 // 打印結果函數
 static void print_result(RANGING_SENSOR_Result_t *Result) {
   int8_t i, j, k, l;
@@ -84,15 +89,15 @@ static void print_result(RANGING_SENSOR_Result_t *Result) {
 
   display_commands_banner();
 
-  printf("Cell Format :\n\n");
+  printf("Cell Format :\033[K\n\033[K\n");
   for (l = 0; l < RANGING_SENSOR_NB_TARGET_PER_ZONE; l++) {
-    printf(" \033[38;5;10m%20s\033[0m : %20s\n", "Distance [mm]", "Status");
+    printf(" \033[38;5;10m%20s\033[0m : %20s\033[K\n", "Distance [mm]", "Status");
     if ((Profile.EnableAmbient != 0) || (Profile.EnableSignal != 0)) {
-      printf(" %20s : %20s\n", "Signal [kcps/spad]", "Ambient [kcps/spad]");
+      printf(" %20s : %20s\033[K\n", "Signal [kcps/spad]", "Ambient [kcps/spad]\033[K");
     }
   }
 
-  printf("\n\n");
+  printf("\033[K\n\033[K\n");
 
   for (j = 0; j < Result->NumberOfZones; j += zones_per_line) {
     // 打印上邊框
@@ -100,13 +105,13 @@ static void print_result(RANGING_SENSOR_Result_t *Result) {
     {
       printf(" -----------------");
     }
-    printf("\n");
+    printf("\033[K\n");
 
     // 打印中間空白行
     for (i = 0; i < zones_per_line; i++) {
       printf("|                 ");
     }
-    printf("|\n");
+    printf("|\033[K\n");
 
     for (l = 0; l < RANGING_SENSOR_NB_TARGET_PER_ZONE; l++) {
       /* Print distance and status */
@@ -123,7 +128,7 @@ static void print_result(RANGING_SENSOR_Result_t *Result) {
         else
           printf("| %5s  :  %5s ", "X", "X");
       }
-      printf("|\n");
+      printf("|\033[K\n");
 
       if ((Profile.EnableAmbient != 0) || (Profile.EnableSignal != 0)) {
         /* Print Signal and Ambient */
@@ -147,7 +152,7 @@ static void print_result(RANGING_SENSOR_Result_t *Result) {
             printf("| %5s  :  %5s ", "X", "X");
           }
         }
-        printf("|\n");
+        printf("|\033[K\n");
       }
     }
   }
@@ -156,7 +161,7 @@ static void print_result(RANGING_SENSOR_Result_t *Result) {
   for (i = 0; i < zones_per_line; i++) {
     printf(" -----------------");
   }
-  printf("\n");
+  printf("\033[K\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -190,12 +195,13 @@ int main(int argc, char *argv[]) {
       calculate_time_diff();
 
       print_result(&packet.data);
-      printf("Packet frequency: %6.2f Hz\n", 1.0 / time_diff);
+      printf("Packet frequency: %6.2f Hz\033[K\n", 1.0 / time_diff);
 
       // 更新 Profile 參數
       Profile.RangingProfile = (packet.resolution == 8) ? 8 : 4;
       Profile.EnableAmbient = 1; // 假設啟用 Ambient
       Profile.EnableSignal = 1;  // 假設啟用 Signal
+      clear_rest();
     }
   }
 
