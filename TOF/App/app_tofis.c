@@ -31,10 +31,14 @@ extern "C" {
 #include "app_tof_pin_conf.h"
 #include "stm32f4xx_nucleo.h"
 
+#ifdef TOFIS_TRANSMIT_RAW_DATA
+#include "tofis_uart.h"
+#endif
+
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
-#define TIMING_BUDGET (50U) /* 5 ms < TimingBudget < 100 ms */
+#define TIMING_BUDGET (30U) /* 5 ms < TimingBudget < 100 ms */
 #define RANGING_FREQUENCY                                                      \
   (10U) /* Ranging frequency Hz (shall be consistent with TimingBudget value)  \
          */
@@ -46,7 +50,10 @@ static RANGING_SENSOR_Result_t Result;
 static int32_t status = 0;
 static volatile uint8_t PushButtonDetected = 0;
 
-// already defined in app_tof.c
+static tofis_slave_device_t _tofis_slave_device;
+
+// // already defined in app_tof.c
+// volatile uint8_t ToF_EventDetected;
 extern volatile uint8_t ToF_EventDetected;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -117,10 +124,12 @@ static void MX_53L8A1_SimpleRanging_Init(void) {
   HAL_Delay(2);
 
   clear_screen();
-
+  
+  #ifndef TOFIS_TRANSMIT_RAW_DATA
   printf("\033[2H\033[2J");
   printf("TOFIS Simple Ranging demo application\n");
   printf("Sensor initialization...\n");
+  #endif
 
   VL53L8A1_RANGING_SENSOR_DeInit(VL53L8A1_DEV_CENTER);
   status = VL53L8A1_RANGING_SENSOR_Init(VL53L8A1_DEV_CENTER);
@@ -130,6 +139,8 @@ static void MX_53L8A1_SimpleRanging_Init(void) {
     while (1)
       ;
   }
+
+  Tofis_Slave_USART_Init(&_tofis_slave_device, &huart2);
 }
 
 static void MX_53L8A1_SimpleRanging_Process(void) {
@@ -166,8 +177,20 @@ static void MX_53L8A1_SimpleRanging_Process(void) {
       status =
           VL53L8A1_RANGING_SENSOR_GetDistance(VL53L8A1_DEV_CENTER, &Result);
 
+      // transmit data
       if (status == BSP_ERROR_NONE) {
+#ifdef TOFIS_TRANSMIT_RAW_DATA
+
+        uint8_t zones_per_line =
+            ((Profile.RangingProfile == RS_PROFILE_8x8_AUTONOMOUS) ||
+             (Profile.RangingProfile == RS_PROFILE_8x8_CONTINUOUS))
+                ? 8
+                : 4;
+
+        Tofis_Slave_USART_SendData_Le(&_tofis_slave_device, zones_per_line, &Result);
+#else
         print_result(&Result);
+#endif
       }
     }
     if (com_has_data()) {
